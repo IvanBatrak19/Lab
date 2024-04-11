@@ -1,0 +1,150 @@
+1) Вивести значення наступних колонок: назва книги, ціна, назва видавництва. Використовувати внутрішнє з'єднання, застосовуючи where.
+   SELECT Books.Name AS BookName, Books.Price, PublishingHouses.Name AS PublishingHouseName
+   FROM Books
+   JOIN PublishingHouses ON Books.PublishingHouseID = PublishingHouses.ID
+   WHERE books.Price < 20;
+
+2) Вивести значення наступних колонок: назва книги, назва категорії. Використовувати внутрішнє з'єднання, застосовуючи inner join.
+   SELECT Books.Name AS BookName, Categories.Name AS CategoryName
+   FROM Books
+   INNER JOIN Categories ON Books.CategoryID = Categories.ID;
+
+3) Вивести значення наступних колонок: назва книги, ціна, назва видавництва, формат.
+   SELECT Books.Name AS BookName, Books.Price, PublishingHouses.Name AS PublishingHouseName, Books.Format
+   FROM Books
+   INNER JOIN PublishingHouses ON Books.PublishingHouseID = PublishingHouses.ID;
+
+4) Вивести значення наступних колонок: тема, категорія, назва книги, назва видавництва. Фільтр по темам і категоріям.
+   SELECT Topics.Name AS Topic, Categories.Name AS Category, Books.Name AS BookName, PublishingHouses.Name AS PublishingHouse
+   FROM Books
+   INNER JOIN Topics ON Books.TopicID = Topics.ID
+   INNER JOIN Categories ON Books.CategoryID = Categories.ID
+   INNER JOIN PublishingHouses ON Books.PublishingHouseID = PublishingHouses.ID
+   WHERE Topics.Name = 'Програмування' AND Categories.Name = 'SQL';
+
+5) Вивести книги видавництва 'BHV', видані після 2000 р
+   SELECT Books.Name AS BookName, Books.Date
+   FROM Books
+   INNER JOIN PublishingHouses ON Books.PublishingHouseID = PublishingHouses.ID
+   WHERE PublishingHouses.Name = 'Видавнича група BHV' AND YEAR(Books.Date) > 2000;
+
+6) Вивести загальну кількість сторінок по кожній назві категорії. Фільтр по спадаючій кількості сторінок.
+   SELECT Categories.Name AS CategoryName, SUM(Books.Pages) AS TotalPages
+   FROM Books
+   INNER JOIN Categories ON Books.CategoryID = Categories.ID
+   GROUP BY Categories.Name
+   ORDER BY TotalPages DESC;
+
+7) Вивести середню вартість книг по темі 'Використання ПК' і категорії 'Linux'.
+   SELECT AVG(Books.Price) AS AveragePrice
+   FROM Books
+   INNER JOIN Topics ON Books.TopicID = Topics.ID
+   INNER JOIN Categories ON Books.CategoryID = Categories.ID
+   WHERE Topics.Name = 'Використання ПК' AND Categories.Name = 'Linux';
+
+8) Вивести всі дані універсального відношення. Використовувати внутрішнє з'єднання, застосовуючи where.
+   SELECT Books.*, PublishingHouses.Name AS PublishingHouse, Topics.Name AS Topic, Categories.Name AS Category
+   FROM Books, PublishingHouses, Topics, Categories
+   WHERE Books.PublishingHouseID = PublishingHouses.ID
+   AND Books.TopicID = Topics.ID
+   AND Books.CategoryID = Categories.ID;
+
+9) Вивести всі дані універсального відношення. Використовувати внутрішнє з'єднання, застосовуючи inner join.
+   SELECT *
+   FROM Books
+   INNER JOIN PublishingHouses ON Books.PublishingHouseID = PublishingHouses.ID
+   INNER JOIN Topics ON Books.TopicID = Topics.ID
+   INNER JOIN Categories ON Books.CategoryID = Categories.ID;
+
+10) Вивести всі дані універсального відношення. Використовувати зовнішнє з'єднання, застосовуючи left join / rigth join.
+    SELECT Books.*, PublishingHouses.Name AS PublishingHouse, Topics.Name AS Topic, Categories.Name AS Category
+    FROM Books
+    LEFT JOIN PublishingHouses ON Books.PublishingHouseID = PublishingHouses.ID
+    LEFT JOIN Topics ON Books.TopicID = Topics.ID
+    LEFT JOIN Categories ON Books.CategoryID = Categories.ID;
+
+11) Вивести пари книг, що мають однакову кількість сторінок. Використовувати само об’єднання і аліаси (self join).
+    SELECT DISTINCT A.Name AS Book1, B.Name AS Book2, A.Pages
+    FROM Books A
+    JOIN Books B ON A.Pages = B.Pages
+    WHERE A.ID < B.ID;
+
+12) Вивести тріади книг, що мають однакову ціну. Використовувати самооб'єднання і аліаси (self join).
+    SELECT DISTINCT A.Name AS Book1, B.Name AS Book2, C.Name AS Book3, A.Price
+    FROM Books A
+    JOIN Books B ON A.Price = B.Price
+    JOIN Books C ON B.Price = C.Price
+    WHERE A.ID < B.ID AND B.ID < C.ID;
+
+13) Вивести всі книги категорії 'C ++'. Використовувати підзапити (subquery).
+    SELECT *
+    FROM Books
+    WHERE CategoryID = (
+     SELECT ID
+     FROM categories
+     WHERE Name = 'C&C++'
+     );
+
+14) Вивести книги видавництва 'BHV', видані після 2000 р Використовувати підзапити (subquery).
+    SELECT *
+    FROM Books
+    WHERE PublishingHouseID = (
+     SELECT ID
+      FROM PublishingHouses
+      WHERE Name = 'Видавнича група BHV')
+     AND YEAR(Date) > 2000;
+
+15) Вивести список видавництв, у яких розмір книг перевищує 400 сторінок. Використовувати пов'язані підзапити (correlated subquery).
+    SELECT Name
+    FROM PublishingHouses AS ph
+    WHERE EXISTS (
+    SELECT *
+    FROM Books AS b
+    WHERE b.PublishingHouseID = ph.ID
+    AND b.Pages > 400
+    );
+
+16) Вивести список категорій в яких більше 3-х книг. Використовувати пов'язані підзапити (correlated subquery).
+    SELECT Name
+    FROM categories AS c
+    WHERE (
+    SELECT COUNT(*)
+    FROM Books AS b
+    WHERE b.CategoryID = c.ID
+    ) > 3;
+
+17) Вивести список книг видавництва 'BHV', якщо в списку є хоча б одна книга цього видавництва. Використовувати exists.
+    SELECT *
+    FROM Books
+    WHERE EXISTS (
+    SELECT *
+    FROM PublishingHouses
+    WHERE Name = 'Видавнича група BHV'
+    AND PublishingHouses.ID = Books.PublishingHouseID
+    );
+
+18) Вивести список книг видавництва 'BHV', якщо в списку немає жодної книги цього видавництва. Використовувати not exists.
+    SELECT *
+    FROM Books
+    WHERE NOT EXISTS (
+    SELECT *
+    FROM PublishingHouses
+    WHERE Name = 'Видавнича група BHV'
+    AND PublishingHouses.ID = Books.PublishingHouseID
+    );
+
+19) Вивести відсортований загальний список назв тем і категорій. Використовувати union.
+    (SELECT Name AS Title
+    FROM Topics)
+    UNION
+    (SELECT Name AS Title
+    FROM Categories)
+    ORDER BY Title;
+
+20) Вивести відсортований в зворотному порядку загальний список перших слів, назв книг і категорій що не повторюються. Використовувати union.
+    (SELECT SUBSTRING_INDEX(Name, ' ', 1) AS FirstWord
+    FROM Books
+    UNION
+    SELECT SUBSTRING_INDEX(Name, ' ', 1) AS FirstWord
+    FROM Categories)
+    ORDER BY FirstWord DESC;
