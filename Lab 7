@@ -1,0 +1,281 @@
+1) Вивести значення наступних колонок: назва книги, ціна, назва видавництва, формат.
+DELIMITER //
+
+CREATE PROCEDURE GetBookInfo()
+BEGIN
+    SELECT Name AS BookTitle, Price, PublishingHouseID AS Publisher, Format
+    FROM books;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL GetBookInfo();
+---------------------------------------------------------------------
+2) Вивести значення наступних колонок: тема, категорія, назва книги, назва видавництва. Фільтр по темам і категоріям.
+DELIMITER //
+
+CREATE PROCEDURE GetBooksByThemeAndCategory(
+    IN theme VARCHAR(255),
+    IN category VARCHAR(255)
+)
+BEGIN
+    SELECT theme, category, Name, PublishingHouseID
+    FROM books
+    WHERE theme = theme
+    AND category = category;
+END;
+//
+
+DELIMITER ;
+
+ПРОВРЕКА:
+
+CALL GetBooksByThemeAndCategory('Використання ПК в цілому', 'Підручники');
+-------------------------------------------------------------------------------------
+3) Вивести книги видавництва 'BHV', видані після 2000 р
+DELIMITER //
+
+CREATE PROCEDURE SelectBooksByPublisherAndYear(IN publisherName VARCHAR(255), IN publicationYear INT)
+BEGIN
+    SELECT * FROM books
+    WHERE books.PublishingHouseID = publisherName
+    AND YEAR(Date) > publicationYear;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectBooksByPublisherAndYear(1, 2000);
+-------------------------------------------------------------------------------------
+4) Вивести загальну кількість сторінок по кожній назві категорії. Фільтр по спадаючій / зростанню кількості сторінок.
+DELIMITER //
+
+CREATE PROCEDURE TotalPagesPerCategory(IN sortOrder VARCHAR(10))
+BEGIN
+    IF sortOrder = 'DESC' THEN
+        SELECT CategoryID, SUM(Pages) AS TotalPages
+        FROM books
+        GROUP BY CategoryID
+        ORDER BY Pages DESC;
+    ELSE
+        SELECT CategoryID, SUM(Pages) AS TPages
+        FROM books
+        GROUP BY CategoryID
+        ORDER BY Pages ASC;
+    END IF;
+END;
+//
+
+DELIMITER ;
+
+
+ПРОВЕРКА:CALL TotalPagesPerCategory('DESC');
+
+-------------------------------------------------------------------------------------
+5) Вивести середню вартість книг по темі 'Використання ПК' і категорії 'Linux'.
+DELIMITER //
+
+CREATE PROCEDURE AveragePriceByTopicAndCategory()
+BEGIN
+    DECLARE avg_price DECIMAL(10,2);
+
+    SELECT AVG(price) INTO avg_price
+    FROM books
+    WHERE TopicID = 1 AND CategoryID = 6;
+
+    SELECT avg_price AS 'AveragePrice';
+END //
+
+DELIMITER ;
+
+ПРОВЕРКА: 
+
+CALL AveragePriceByTopicAndCategory();
+-------------------------------------------------------------------------------------
+6) Вивести всі дані універсального відношення.
+DELIMITER //
+
+CREATE PROCEDURE SelectAllBooks()
+BEGIN
+    SELECT *
+    FROM books;
+END;
+//
+
+DELIMITER ;
+
+
+ПРОВЕРКА:
+
+CALL SelectAllBooks();
+-------------------------------------------------------------------------------------
+7) Вивести пари книг, що мають однакову кількість сторінок.
+DELIMITER //
+
+CREATE PROCEDURE SelectBooksByPageCount()
+BEGIN
+    SELECT b1.name AS Book1, b2.name AS Book2, b1.Pages AS PageCount
+    FROM books b1
+    JOIN books b2 ON b1.Pages = b2.Pages AND b1.ID < b2.ID;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectBooksByPageCount();
+-------------------------------------------------------------------------------------
+8) Вивести тріади книг, що мають однакову ціну.
+DELIMITER //
+
+CREATE PROCEDURE SelectBooksByPrice()
+BEGIN
+    SELECT *
+    FROM books
+    GROUP BY price
+    HAVING COUNT(*) >= 3;
+END;
+//
+
+DELIMITER ; 
+
+ПРОВЕРКА:
+
+CALL SelectBooksByPrice();
+-------------------------------------------------------------------------------------
+9) Вивести всі книги категорії 'C ++'.
+DELIMITER //
+
+CREATE PROCEDURE SelectBooksByCategory()
+BEGIN
+    SELECT *
+    FROM books
+    WHERE CategoryID = 8;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectBooksByCategory();
+-------------------------------------------------------------------------------------
+10) Вивести список видавництв, у яких розмір книг перевищує 400 сторінок
+DELIMITER //
+
+CREATE PROCEDURE SelectPublishersByPageCount()
+BEGIN
+    SELECT DISTINCT PublishingHouseID
+    FROM books
+    WHERE Pages > 400;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectPublishersByPageCount();
+-------------------------------------------------------------------------------------
+11) Вивести список категорій за якими більше 3-х книг.
+DELIMITER //
+
+CREATE PROCEDURE SelectCategoriesWithMoreThanThreeBooks()
+BEGIN
+    SELECT CategoryID
+    FROM books
+    GROUP BY CategoryID
+    HAVING COUNT(*) > 3;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectCategoriesWithMoreThanThreeBooks();
+-------------------------------------------------------------------------------------
+12) Вивести список книг видавництва 'BHV', якщо в списку є хоча б одна книга цього видавництва.
+DELIMITER //
+
+CREATE PROCEDURE SelectBooksByPublisher(IN publisherName VARCHAR(255))
+BEGIN
+    SELECT *
+    FROM books
+    WHERE PublishingHouseID = publisherName;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectBooksByPublisher(1);
+-------------------------------------------------------------------------------------
+13) Вивести список книг видавництва 'BHV', якщо в списку немає жодної книги цього видавництва.
+DELIMITER //
+
+CREATE PROCEDURE SelectBooksByPublisherIfNone(IN publisherName VARCHAR(255))
+BEGIN
+    DECLARE bookCount INT;
+
+    SELECT COUNT(*)
+    INTO bookCount
+    FROM books
+    WHERE PublishingHouseID = publisherName;
+
+    IF bookCount = 0 THEN
+        SELECT *
+        FROM books
+        WHERE PublishingHouseID = publisherName;
+    END IF;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectBooksByPublisherIfNone(1);
+-------------------------------------------------------------------------------------
+14) Вивести відсортоване загальний список назв тем і категорій.
+DELIMITER //
+
+CREATE PROCEDURE SelectSortedTopicsAndCategories()
+BEGIN
+    SELECT topics.Name AS Title FROM books, topics
+    UNION
+    SELECT categories.Name AS Title FROM books, categories
+    ORDER BY Title;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectSortedTopicsAndCategories();
+-------------------------------------------------------------------------------------
+15) Вивести відсортований в зворотному порядку загальний список перших слів назв книг і категорій що не повторюються
+DELIMITER //
+
+CREATE PROCEDURE SelectDistinctFirstWordsReverse()
+BEGIN
+    SELECT DISTINCT REVERSE(SUBSTRING_INDEX(REVERSE(Name), ' ', 1)) AS FirstWord FROM books
+    UNION
+    SELECT DISTINCT REVERSE(SUBSTRING_INDEX(REVERSE(CategoryID), ' ', 1)) AS FirstWord FROM books
+    ORDER BY FirstWord DESC;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+CALL SelectDistinctFirstWordsReverse();
