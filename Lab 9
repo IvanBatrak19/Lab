@@ -1,0 +1,148 @@
+1) Розробити та перевірити скалярну (scalar) функцію, що повертає загальну вартість книг виданих в певному році.
+DELIMITER //
+
+CREATE FUNCTION calculateTotalCostByYear(p_year INT) RETURNS DECIMAL(10, 2)
+BEGIN
+    DECLARE total_cost DECIMAL(10, 2);
+
+    SELECT SUM(price) INTO total_cost
+    FROM books
+    WHERE YEAR(date) = p_year;
+
+    IF total_cost IS NULL THEN
+        SET total_cost = 0;
+    END IF;
+
+    RETURN total_cost;
+END //
+
+DELIMITER ;
+
+ПРОВЕРКА: 
+
+SELECT calculateTotalCostByYear(2023) AS total_cost_2023;
+------------------------------------------------------------------
+2) Розробити і перевірити табличну (inline) функцію, яка повертає список книг виданих в певному році.
+DELIMITER //
+
+CREATE PROCEDURE getBooksByYear(IN p_year INT)
+BEGIN
+    CREATE TEMPORARY TABLE temp_books (
+        name VARCHAR(255),
+        price DECIMAL(10, 2),
+        date DATE
+    );
+
+    INSERT INTO temp_books (name, price, date)
+    SELECT name, price, date
+    FROM books
+    WHERE YEAR(date) = p_year;
+
+    SELECT * FROM temp_books;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_books;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА: 
+
+CALL getBooksByYear(2000);
+------------------------------------------------------------------
+3) Розробити і перевірити функцію типу multi-statement, яка буде:
+   a. приймати в якості вхідного параметра рядок, що містить список назв видавництв, розділених символом ‘;’; 
+   b. виділяти з цього рядка назву видавництва;
+   c. формувати нумерований список назв видавництв.
+DELIMITER //
+
+CREATE FUNCTION generatePublisherList(inputString TEXT)
+RETURNS TEXT
+BEGIN
+    DECLARE publisherList TEXT DEFAULT '';
+    DECLARE publisherName TEXT;
+    DECLARE i INT DEFAULT 1;
+    IF inputString IS NULL THEN
+        RETURN NULL;
+    END IF;
+    WHILE i <= LENGTH(inputString) DO
+        SET publisherName = SUBSTRING_INDEX(SUBSTRING_INDEX(inputString, ';', i), ';', -1);
+        SET publisherList = CONCAT(publisherList, i, '. ', publisherName, '\n');
+        SET i = i + 1;
+    END WHILE;
+
+    RETURN publisherList;
+END;
+//
+
+DELIMITER ;
+
+ПРОВЕРКА:
+
+SELECT generatePublisherList('Видавнича група BHV; Вільямс; ДМК'); 
+------------------------------------------------------------------
+4) Виконати набір операцій по роботі з SQL курсором: оголосити курсор;
+   a. використовувати змінну для оголошення курсору;
+   b. відкрити курсор;
+   c. переприсвоїти курсор іншої змінної;
+   d. виконати вибірку даних з курсору;
+   e. закрити курсор;
+DELIMITER //
+
+CREATE PROCEDURE cursor4()
+BEGIN
+  DECLARE fetched_data DECIMAL(10,2);
+  DECLARE finiched INTEGER DEFAULT 0;
+  DECLARE book_prices CURSOR FOR SELECT price 
+  FROM books WHERE YEAR(date) = 2020;
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET finiched = 1;
+  OPEN book_prices;
+  read_loop: LOOP
+    FETCH book_prices INTO fetched_data;
+    IF finiched = 1 THEN
+      LEAVE read_loop;
+    END IF;
+    SELECT fetched_data;
+  END LOOP;
+  CLOSE book_prices;
+END //
+
+DELIMITER ;
+
+ПРОВЕРКА: 
+
+CALL cursor4();
+__________________________________________________________________
+5) Звільнити курсор. Розробити курсор для виводу списка книг виданих у визначеному році.
+DELIMITER //
+
+CREATE PROCEDURE freedcurso4(IN yearToSearch INT)
+BEGIN
+   DECLARE done INT DEFAULT FALSE;
+   DECLARE bookId INT;
+   DECLARE bookName VARCHAR(100);
+   DECLARE bookDate DATE;
+
+   DECLARE bookCursor CURSOR FOR
+   SELECT id, name, date 
+   FROM books WHERE YEAR(date) = yearToSearch;
+
+   DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+   OPEN bookCursor;
+   read_loop: LOOP 
+       FETCH bookCursor INTO bookId, bookName, bookDate;
+       IF done THEN
+           LEAVE read_loop;
+       END IF;
+       SELECT CONCAT('Book ID: ', bookId, ', Name: ', bookName, ', Date: ', bookDate) AS BookInfo;
+   END LOOP;
+
+   CLOSE bookCursor;    
+   SET FOREIGN_KEY_CHECKS = ON;
+END //
+
+DELIMITER ;
+
+ПРОВЕРКА:
+ 
+CALL freedcurso4(2020);
